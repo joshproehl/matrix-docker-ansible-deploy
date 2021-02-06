@@ -194,6 +194,15 @@ Note that this configuration on its own does **not** redirect traffic on port 80
       permanent = true
 ```
 
+If we are hosting at matrix.domain.com, domain.com is being hosted at a different IP, and we're using SRV records to delegate matrix traffic to our subdomain, we will have a problem with federation due to SRV requests coming to the matrix.domain.com IP but having a header for domain.com.  
+To solve this we can add a rule to the Synapse container to capture traffic for domain.com/_matrix.  
+*Note that this relies on the certResolver we're using being a DNS-based challenge in order to generate a valid cert. (because domain.com/.well-known requests would go to the server hosting domain.com)*  
+Replace the following lines in your matrix_synapse_container_extra_arguments: section to let Synapse handle these requests:
+```
+# The Synapse container will receive traffic from this subdomain
+- '--label "traefik.http.routers.matrix-synapse.rule=Host(`{{ matrix_server_fqn_matrix }}`) || (Host(`{{ matrix_domain }}`) && PathPrefix(`/_matrix`))"'
+```
+
 You can use the following `docker-compose.yml` as example to launch Traefik.
 
 ```yaml
